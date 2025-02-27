@@ -172,7 +172,7 @@
           <div class="row">
             <div class="col-md-6 mb-2">
               <label for="propertyAddress" class="form-label">Endereço do Imóvel:</label>
-              <input type="text" class="form-control" id="propertyAddress" required placeholder="Digite para autocompletar">
+              <input type="text" class="form-control" id="propertyAddress" required>
             </div>
             <div class="col-md-6 mb-2">
               <label for="rentAmount" class="form-label">Valor do Aluguel (R$):</label>
@@ -279,7 +279,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCX86iZwLf1wsbi0vvgCKWnxR2ypCoRzl8&libraries=places"></script>
   <script>
     // Funções auxiliares
     function numberToWords(num) {
@@ -395,17 +394,6 @@
       const end = new Date(endDate.value);
       validateField(endDate, end > start ? '' : 'Data de término deve ser posterior à data de início');
     }
-
-    // Autocomplete do Google Maps
-    function initAutocomplete() {
-      const input = document.getElementById('propertyAddress');
-      const autocomplete = new google.maps.places.Autocomplete(input, { types: ['geocode'], componentRestrictions: { country: 'br' } });
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        input.value = place.formatted_address || input.value;
-      });
-    }
-    google.maps.event.addDomListener(window, 'load', initAutocomplete);
 
     // Preenchimento de UF e cidades com API do IBGE
     fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome')
@@ -573,7 +561,7 @@
       const tenantAddressText = data.tenantAddress ? `, residente e domiciliado na ${data.tenantAddress}` : '';
 
       const contractHTML = `
-        <h4 style="text-align: center; font-weight: bold;">CONTRATO DE LOCAÇÃO DE IMÓVEL RESIDENCIAL</h4>
+        <h4 style="text-align: center; font-weight: bold;padding-bottom:20px;">CONTRATO DE LOCAÇÃO DE IMÓVEL RESIDENCIAL</h4>
         <p><strong>LOCADOR:</strong> ${data.landlordName}, ${data.landlordNationality}, ${data.landlordCivilStatus}, ${data.landlordProfession}, portador do CPF nº ${data.landlordCPF}${landlordAddressText}.</p>
         <p><strong>LOCATÁRIO:</strong> ${data.tenantName}, ${data.tenantNationality}, ${data.tenantCivilStatus}, ${data.tenantProfession}, portador do CPF nº ${data.tenantCPF}${tenantAddressText}.</p>
         <p>As partes citadas têm entre si justas e acordadas o presente Contrato de Locação de Imóvel Residencial, que se regerá pelas cláusulas e condições seguintes:</p>
@@ -590,7 +578,7 @@
         <h5 style="font-weight: bold;">CLÁUSULA TERCEIRA - DO ALUGUEL E ENCARGOS</h5>
         <p>O valor mensal do aluguel é de ${rentAmountText}, a ser pago até o dia ${paymentDayText} de cada mês, através de ${data.paymentMethod}.</p>
         <p><strong>PARÁGRAFO PRIMEIRO -</strong> Em caso de atraso no pagamento do aluguel, será cobrada uma multa de ${lateFeeText} sobre o valor do aluguel em atraso, além de juros de ${interestRateText} ao mês e correção monetária conforme índice de inflação vigente.</p>
-        <p><strong>PARÁGRAFO SEGUNDO -</strong> Além do aluguel, o LOCATÁRIO é responsável pelo pagamento das contas de consumo (água e energia).</p>
+        <p><strong>PARÁGRAFO SEGUNDA -</strong> Além do aluguel, o LOCATÁRIO é responsável pelo pagamento das contas de consumo (água e energia).</p>
         <h5 style="font-weight: bold;">CLÁUSULA QUARTA - DO REAJUSTE</h5>
         <p>O aluguel será reajustado anualmente, a cada ${readjustmentPeriodText}, com base na variação ${adjustmentIndexText}.</p>
         <h5 style="font-weight: bold;">CLÁUSULA QUINTA - DA CONSERVAÇÃO E MANUTENÇÃO</h5>
