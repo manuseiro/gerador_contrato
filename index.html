@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerador de Contrato de Locação</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #f0f2f5;
+      --text-color: #2c3e50;
+      --card-bg: #fff;
+      --primary: #3498db;
+      --success: #27ae60;
+    }
+    [data-theme="dark"] {
+      --bg-color: #1a1a1a;
+      --text-color: #ecf0f1;
+      --card-bg: #2c2c2c;
+      --primary: #5dade2;
+      --success: #52be80;
+    }
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: Arial, sans-serif;
+      transition: all 0.3s;
+    }
+    .container { max-width: 900px; padding: 20px; }
+    h1 { color: var(--text-color); }
+    .card { background-color: var(--card-bg); border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .card-header { background-color: var(--primary); color: white; }
+    .form-label { font-weight: bold; }
+    .contract-preview { display: none; margin-top: 20px; padding: 15px; background: var(--card-bg); border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    #contractText { font-size: 12px; line-height: 1.5; }
+    .btn-primary { background-color: var(--primary); border: none; }
+    .btn-primary:hover { background-color: #2980b9; }
+    .btn-success { background-color: var(--success); border: none; }
+    .btn-success:hover { background-color: #219653; }
+    .btn-reset { background-color: #e74c3c; border: none; }
+    .btn-reset:hover { background-color: #c0392b; }
+    .is-invalid { border-color: #dc3545; }
+    .invalid-feedback { display: block; font-size: 0.9em; }
+    #pdfTemp { display: none; }
+    .tooltip-inner { background-color: #333; color: #fff; }
+    @media (max-width: 768px) {
+      .col-md-6 { margin-bottom: 15px; }
+      .form-label { font-size: 0.9em; }
+      .btn { padding: 8px 12px; font-size: 0.9em; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="text-center flex-grow-1">Gerador de Contrato de Locação</h1>
+      <button id="toggleTheme" class="btn btn-secondary">Modo Noturno</button>
+    </div>
+
+    <!-- Formulário -->
+    <form id="contractForm" class="card p-3">
+      <!-- Dados do Locador -->
+      <div class="card mb-3">
+        <div class="card-header">Dados do Locador</div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <label for="landlordName" class="form-label">Nome:</label>
+              <input type="text" class="form-control" id="landlordName" required>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="landlordNationality" class="form-label">Nacionalidade:</label>
+              <select class="form-select" id="landlordNationality" required>
+                <option value="Brasileira">Brasileira</option>
+                <option value="Argentina">Argentina</option>
+                <option value="Portuguesa">Portuguesa</option>
+                <option value="Espanhola">Espanhola</option>
+                <option value="Outra">Outra</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="landlordCivilStatus" class="form-label">Estado Civil:</label>
+              <select class="form-select" id="landlordCivilStatus" required>
+                <option value="Solteiro(a)">Solteiro(a)</option>
+                <option value="Casado(a)">Casado(a)</option>
+                <option value="Divorciado(a)">Divorciado(a)</option>
+                <option value="Viúvo(a)">Viúvo(a)</option>
+                <option value="Separado(a)">Separado(a)</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="landlordProfession" class="form-label">Profissão:</label>
+              <select class="form-select" id="landlordProfession" required>
+                <option value="Advogado(a)">Advogado(a)</option>
+                <option value="Engenheiro(a)">Engenheiro(a)</option>
+                <option value="Médico(a)">Médico(a)</option>
+                <option value="Professor(a)">Professor(a)</option>
+                <option value="Autônomo(a)">Autônomo(a)</option>
+                <option value="Outro">Outro</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="landlordCPF" class="form-label">CPF:</label>
+              <input type="text" class="form-control" id="landlordCPF" required maxlength="14" placeholder="000.000.000-00">
+              <div class="invalid-feedback" id="landlordCPFError"></div>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="landlordAddress" class="form-label">Endereço (opcional):</label>
+              <input type="text" class="form-control" id="landlordAddress">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dados do Locatário -->
+      <div class="card mb-3">
+        <div class="card-header">Dados do Locatário</div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <label for="tenantName" class="form-label">Nome:</label>
+              <input type="text" class="form-control" id="tenantName" required>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="tenantNationality" class="form-label">Nacionalidade:</label>
+              <select class="form-select" id="tenantNationality" required>
+                <option value="Brasileira">Brasileira</option>
+                <option value="Argentina">Argentina</option>
+                <option value="Portuguesa">Portuguesa</option>
+                <option value="Espanhola">Espanhola</option>
+                <option value="Outra">Outra</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="tenantCivilStatus" class="form-label">Estado Civil:</label>
+              <select class="form-select" id="tenantCivilStatus" required>
+                <option value="Solteiro(a)">Solteiro(a)</option>
+                <option value="Casado(a)">Casado(a)</option>
+                <option value="Divorciado(a)">Divorciado(a)</option>
+                <option value="Viúvo(a)">Viúvo(a)</option>
+                <option value="Separado(a)">Separado(a)</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="tenantProfession" class="form-label">Profissão:</label>
+              <select class="form-select" id="tenantProfession" required>
+                <option value="Advogado(a)">Advogado(a)</option>
+                <option value="Engenheiro(a)">Engenheiro(a)</option>
+                <option value="Médico(a)">Médico(a)</option>
+                <option value="Professor(a)">Professor(a)</option>
+                <option value="Autônomo(a)">Autônomo(a)</option>
+                <option value="Outro">Outro</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="tenantCPF" class="form-label">CPF:</label>
+              <input type="text" class="form-control" id="tenantCPF" required maxlength="14" placeholder="000.000.000-00">
+              <div class="invalid-feedback" id="tenantCPFError"></div>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="tenantAddress" class="form-label">Endereço (opcional):</label>
+              <input type="text" class="form-control" id="tenantAddress">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dados do Contrato -->
+      <div class="card mb-3">
+        <div class="card-header">Dados do Contrato</div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <label for="propertyAddress" class="form-label">Endereço do Imóvel:</label>
+              <input type="text" class="form-control" id="propertyAddress" required placeholder="Digite para autocompletar">
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="rentAmount" class="form-label">Valor do Aluguel (R$):</label>
+              <input type="text" class="form-control" id="rentAmount" required placeholder="R$ 0,00">
+              <div class="invalid-feedback" id="rentAmountError"></div>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="rentalPeriod" class="form-label">Prazo de Locação (meses):</label>
+              <input type="number" class="form-control" id="rentalPeriod" required min="1">
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="startDate" class="form-label">Data de Início:</label>
+              <input type="date" class="form-control" id="startDate" required>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="endDate" class="form-label">Data de Término:</label>
+              <input type="date" class="form-control" id="endDate" required>
+              <div class="invalid-feedback" id="endDateError"></div>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="paymentDay" class="form-label">Dia de Pagamento:</label>
+              <input type="number" min="1" max="31" class="form-control" id="paymentDay" required>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="paymentMethod" class="form-label">Forma de Pagamento:</label>
+              <select class="form-select" id="paymentMethod" required>
+                <option value="Pix">Pix</option>
+                <option value="Boleto">Boleto</option>
+                <option value="Transferência Bancária">Transferência Bancária</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="lateFee" class="form-label">Multa por Atraso (%):</label>
+              <input type="number" step="0.01" class="form-control" id="lateFee" required min="0">
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="interestRate" class="form-label">Juros por Atraso (% ao mês):</label>
+              <input type="number" step="0.01" class="form-control" id="interestRate" required min="0">
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="readjustmentPeriod" class="form-label">Período de Reajuste (meses):</label>
+              <input type="number" class="form-control" id="readjustmentPeriod" required min="1">
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="adjustmentIndex" class="form-label">Índice de Correção:</label>
+              <select class="form-select" id="adjustmentIndex" required data-bs-toggle="tooltip" title="">
+                <option value="IPCA" data-tooltip="Índice de Preços ao Consumidor Amplo">IPCA</option>
+                <option value="IGP-M" data-tooltip="Índice Geral de Preços do Mercado">IGP-M</option>
+                <option value="INPC" data-tooltip="Índice Nacional de Preços ao Consumidor">INPC</option>
+                <option value="IVAR" data-tooltip="Índice de Variação de Aluguéis Residenciais">IVAR</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="guarantee" class="form-label">Tipo de Garantia:</label>
+              <select class="form-select" id="guarantee" required>
+                <option value="deposit">Caução</option>
+                <option value="guarantor">Fiador</option>
+                <option value="insurance">Seguro-Fiança</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-2" id="depositMonthsField" style="display: none;">
+              <label for="depositMonths" class="form-label">Meses de Caução:</label>
+              <input type="number" class="form-control" id="depositMonths" min="1" placeholder="Ex.: 3">
+              <div class="invalid-feedback" id="depositMonthsError"></div>
+            </div>
+            <div class="col-md-6 mb-2" id="guarantorFields" style="display: none;">
+              <label for="guarantorName" class="form-label">Nome do Fiador:</label>
+              <input type="text" class="form-control" id="guarantorName">
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="state" class="form-label">Estado (UF):</label>
+              <select class="form-select" id="state" required></select>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="city" class="form-label">Cidade:</label>
+              <select class="form-select" id="city" required></select>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label for="contractDate" class="form-label">Data do Contrato:</label>
+              <input type="date" class="form-control" id="contractDate" required>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-center">
+        <button type="submit" class="btn btn-primary me-2">Gerar Contrato</button>
+        <button type="button" class="btn btn-reset" id="resetForm">Limpar Formulário</button>
+      </div>
+    </form>
+
+    <!-- Visualização do Contrato -->
+    <div id="contractPreview" class="contract-preview">
+      <h3 class="text-center">Contrato de Locação Residencial</h3>
+      <div id="contractText"></div>
+      <div class="text-center mt-3">
+        <button id="downloadPDF" class="btn btn-success">Baixar como PDF</button>
+      </div>
+    </div>
+
+    <!-- Elemento temporário para PDF -->
+    <div id="pdfTemp"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCX86iZwLf1wsbi0vvgCKWnxR2ypCoRzl8&libraries=places"></script>
+  <script>
+    // Funções auxiliares
+    function numberToWords(num) {
+      const units = ['zero', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove'];
+      const teens = ['dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+      const tens = ['vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+      if (num < 10) return units[num];
+      if (num < 20) return teens[num - 10];
+      if (num < 100) {
+        const ten = Math.floor(num / 10);
+        const unit = num % 10;
+        return unit === 0 ? tens[ten - 2] : `${tens[ten - 2]} e ${units[unit]}`;
+      }
+      return num.toString();
+    }
+
+    function moneyToWords(value) {
+      const units = ['zero', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove'];
+      const teens = ['dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+      const tens = ['vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+      const hundreds = ['cem', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+      let [integer, decimal] = value.toFixed(2).split('.');
+      integer = parseInt(integer);
+      let result = '';
+
+      if (integer >= 1000) {
+        const thousandPart = Math.floor(integer / 1000);
+        result += thousandPart === 1 ? 'mil' : `${numberToWords(thousandPart)} mil`;
+        integer %= 1000;
+        if (integer > 0) result += ' e ';
+      }
+      if (integer >= 100) {
+        const hundredPart = Math.floor(integer / 100);
+        result += hundredPart === 1 && integer === 100 ? 'cem' : hundreds[hundredPart - 1];
+        integer %= 100;
+        if (integer > 0) result += ' e ';
+      }
+      if (integer >= 20) {
+        const tenPart = Math.floor(integer / 10);
+        result += tens[tenPart - 2];
+        integer %= 10;
+        if (integer > 0) result += ' e ';
+      } else if (integer >= 10) {
+        result += teens[integer - 10];
+        integer = 0;
+      }
+      if (integer > 0) result += units[integer];
+
+      result += decimal === '00' ? ' reais' : ` reais e ${numberToWords(parseInt(decimal))} centavos`;
+      return result;
+    }
+
+    function formatDateToWords(dateStr) {
+      const [year, month, day] = dateStr.split('-');
+      const months = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+      return `${day.padStart(2, '0')} de ${months[parseInt(month) - 1]} de ${year}`;
+    }
+
+    function formatDateToDDMMYYYY(dateStr) {
+      const [year, month, day] = dateStr.split('-');
+      return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+    }
+
+    function validateCPF(cpf) {
+      cpf = cpf.replace(/\D/g, '');
+      if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+      let sum = 0, remainder;
+      for (let i = 1; i <= 9; i++) sum += parseInt(cpf[i-1]) * (11 - i);
+      remainder = (sum * 10) % 11;
+      if (remainder === 10 || remainder === 11) remainder = 0;
+      if (remainder !== parseInt(cpf[9])) return false;
+      sum = 0;
+      for (let i = 1; i <= 10; i++) sum += parseInt(cpf[i-1]) * (12 - i);
+      remainder = (sum * 10) % 11;
+      if (remainder === 10 || remainder === 11) remainder = 0;
+      return remainder === parseInt(cpf[10]);
+    }
+
+    // Máscara e validação de CPF
+    function applyCPFFormat(input) {
+      let value = input.value.replace(/\D/g, '');
+      value = value.replace(/(\d{3})(\d)/, '$1.$2');
+      value = value.replace(/(\d{3})(\d)/, '$1.$2');
+      value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+      input.value = value;
+      validateField(input, validateCPF(value) ? '' : 'CPF inválido');
+    }
+    ['landlordCPF', 'tenantCPF'].forEach(id => {
+      const input = document.getElementById(id);
+      input.addEventListener('input', () => applyCPFFormat(input));
+      input.addEventListener('blur', () => applyCPFFormat(input));
+    });
+
+    // Formatação de moeda em tempo real
+    const rentAmount = document.getElementById('rentAmount');
+    rentAmount.addEventListener('input', function() {
+      let value = this.value.replace(/\D/g, '') / 100;
+      this.value = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+      validateField(this, value > 0 ? '' : 'Valor inválido');
+    });
+
+    // Validação de datas
+    const startDate = document.getElementById('startDate');
+    const endDate = document.getElementById('endDate');
+    startDate.addEventListener('change', updateEndDateMin);
+    endDate.addEventListener('change', validateDates);
+    function updateEndDateMin() {
+      endDate.min = startDate.value;
+      validateDates();
+    }
+    function validateDates() {
+      const start = new Date(startDate.value);
+      const end = new Date(endDate.value);
+      validateField(endDate, end > start ? '' : 'Data de término deve ser posterior à data de início');
+    }
+
+    // Autocomplete do Google Maps
+    function initAutocomplete() {
+      const input = document.getElementById('propertyAddress');
+      const autocomplete = new google.maps.places.Autocomplete(input, { types: ['geocode'], componentRestrictions: { country: 'br' } });
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        input.value = place.formatted_address || input.value;
+      });
+    }
+    google.maps.event.addDomListener(window, 'load', initAutocomplete);
+
+    // Preenchimento de UF e cidades com API do IBGE
+    fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome')
+      .then(response => response.json())
+      .then(states => {
+        const stateSelect = document.getElementById('state');
+        states.forEach(state => {
+          const option = document.createElement('option');
+          option.value = state.sigla;
+          option.textContent = state.nome;
+          stateSelect.appendChild(option);
+        });
+        stateSelect.addEventListener('change', loadCities);
+        loadCities(); // Carrega cidades do primeiro estado por padrão
+      });
+    function loadCities() {
+      const state = document.getElementById('state').value;
+      const citySelect = document.getElementById('city');
+      citySelect.innerHTML = '<option value="">Carregando...</option>';
+      fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${state}/municipios?orderBy=nome`)
+        .then(response => response.json())
+        .then(cities => {
+          citySelect.innerHTML = '';
+          cities.forEach(city => {
+            const option = document.createElement('option');
+            option.value = city.nome;
+            option.textContent = city.nome;
+            citySelect.appendChild(option);
+          });
+        });
+    }
+
+    // Campos dinâmicos para garantia
+    document.getElementById('guarantee').addEventListener('change', function() {
+      const guarantorFields = document.getElementById('guarantorFields');
+      const depositMonthsField = document.getElementById('depositMonthsField');
+      guarantorFields.style.display = this.value === 'guarantor' ? 'block' : 'none';
+      depositMonthsField.style.display = this.value === 'deposit' ? 'block' : 'none';
+      document.getElementById('guarantorName').required = this.value === 'guarantor';
+      document.getElementById('depositMonths').required = this.value === 'deposit';
+    });
+
+    // Validação em tempo real
+    function validateField(input, errorMessage) {
+      if (errorMessage) {
+        input.classList.add('is-invalid');
+        const errorDiv = document.getElementById(`${input.id}Error`) || input.nextElementSibling;
+        errorDiv.textContent = errorMessage;
+      } else {
+        input.classList.remove('is-invalid');
+        const errorDiv = document.getElementById(`${input.id}Error`) || input.nextElementSibling;
+        errorDiv.textContent = '';
+      }
+    }
+
+    // Tooltips para índices de correção
+    const adjustmentIndex = document.getElementById('adjustmentIndex');
+    adjustmentIndex.addEventListener('change', function() {
+      const tooltipText = this.options[this.selectedIndex].dataset.tooltip;
+      const tooltip = bootstrap.Tooltip.getOrCreateInstance(this);
+      tooltip.setContent({ '.tooltip-inner': tooltipText });
+    });
+    new bootstrap.Tooltip(adjustmentIndex, { trigger: 'hover focus', customClass: 'tooltip' });
+
+    // Modo noturno
+    document.getElementById('toggleTheme').addEventListener('click', function() {
+      document.body.dataset.theme = document.body.dataset.theme === 'dark' ? '' : 'dark';
+      this.textContent = document.body.dataset.theme === 'dark' ? 'Modo Claro' : 'Modo Noturno';
+    });
+
+    // Limpar formulário
+    document.getElementById('resetForm').addEventListener('click', function() {
+      document.getElementById('contractForm').reset();
+      document.getElementById('contractPreview').style.display = 'none';
+      document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+      document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+      loadCities();
+    });
+
+    // Geração do contrato
+    document.getElementById('contractForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      let isValid = true;
+
+      // Validações finais
+      ['landlordCPF', 'tenantCPF'].forEach(id => {
+        const input = document.getElementById(id);
+        if (!validateCPF(input.value)) isValid = false;
+      });
+      const rentValue = parseFloat(rentAmount.value.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+      if (rentValue <= 0) isValid = false;
+      const depositMonths = document.getElementById('depositMonths');
+      if (document.getElementById('guarantee').value === 'deposit' && (!depositMonths.value || depositMonths.value < 1)) {
+        validateField(depositMonths, 'Informe um número válido de meses');
+        isValid = false;
+      }
+      if (!isValid) return;
+
+      // Captura dos dados
+      const data = {
+        landlordName: document.getElementById('landlordName').value,
+        landlordNationality: document.getElementById('landlordNationality').value,
+        landlordCivilStatus: document.getElementById('landlordCivilStatus').value,
+        landlordProfession: document.getElementById('landlordProfession').value,
+        landlordCPF: document.getElementById('landlordCPF').value,
+        landlordAddress: document.getElementById('landlordAddress').value,
+        tenantName: document.getElementById('tenantName').value,
+        tenantNationality: document.getElementById('tenantNationality').value,
+        tenantCivilStatus: document.getElementById('tenantCivilStatus').value,
+        tenantProfession: document.getElementById('tenantProfession').value,
+        tenantCPF: document.getElementById('tenantCPF').value,
+        tenantAddress: document.getElementById('tenantAddress').value,
+        propertyAddress: document.getElementById('propertyAddress').value,
+        rentAmount: rentValue,
+        rentalPeriod: parseInt(document.getElementById('rentalPeriod').value),
+        startDate: document.getElementById('startDate').value,
+        endDate: document.getElementById('endDate').value,
+        paymentDay: parseInt(document.getElementById('paymentDay').value),
+        paymentMethod: document.getElementById('paymentMethod').value,
+        lateFee: parseFloat(document.getElementById('lateFee').value),
+        interestRate: parseFloat(document.getElementById('interestRate').value),
+        readjustmentPeriod: parseInt(document.getElementById('readjustmentPeriod').value),
+        adjustmentIndex: document.getElementById('adjustmentIndex').value,
+        guarantee: document.getElementById('guarantee').value,
+        guarantorName: document.getElementById('guarantorName').value || '',
+        depositMonths: data.guarantee === 'deposit' ? parseInt(document.getElementById('depositMonths').value) : 3,
+        cityState: `${document.getElementById('city').value} - ${document.getElementById('state').value}`,
+        contractDate: document.getElementById('contractDate').value
+      };
+
+      // Formatações
+      const rentalPeriodText = `${data.rentalPeriod.toString().padStart(2, '0')} (${numberToWords(data.rentalPeriod)}) meses`;
+      const startDateText = formatDateToDDMMYYYY(data.startDate);
+      const endDateText = formatDateToDDMMYYYY(data.endDate);
+      const rentAmountText = `R$ ${data.rentAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${moneyToWords(data.rentAmount)})`;
+      const paymentDayText = `${data.paymentDay.toString().padStart(2, '0')} (${numberToWords(data.paymentDay)})`;
+      const lateFeeText = `${data.lateFee.toFixed(2).replace('.', ',')}% (${numberToWords(Math.floor(data.lateFee))} por cento)`;
+      const interestRateText = `${data.interestRate.toFixed(2).replace('.', ',')}% (${numberToWords(Math.floor(data.interestRate))} por cento)`;
+      const readjustmentPeriodText = `${data.readjustmentPeriod.toString().padStart(2, '0')} (${numberToWords(data.readjustmentPeriod)}) meses`;
+      const contractDateText = `${data.cityState}, ${formatDateToWords(data.contractDate)}`;
+      const indexFullNames = {
+        'IPCA': 'do Índice Nacional de Preços ao Consumidor Amplo (IPCA)',
+        'IGP-M': 'do Índice Geral de Preços do Mercado (IGP-M)',
+        'INPC': 'do Índice Nacional de Preços ao Consumidor (INPC)',
+        'IVAR': 'do Índice de Variação de Aluguéis Residenciais (IVAR)'
+      };
+      const adjustmentIndexText = `${indexFullNames[data.adjustmentIndex]} ou outro índice que venha a substituí-lo`;
+
+      // Texto da garantia
+      let guaranteeText = '';
+      switch (data.guarantee) {
+        case 'deposit':
+          guaranteeText = `Caução: O LOCATÁRIO deposita a título de caução o valor equivalente a ${data.depositMonths} (${numberToWords(data.depositMonths)}) meses de aluguel que será restituído ao término do contrato, após a devida vistoria do imóvel e a quitação de todas as obrigações contratuais.`;
+          break;
+        case 'guarantor':
+          guaranteeText = `Fiador: O LOCATÁRIO apresenta como fiador ${data.guarantorName}.`;
+          break;
+        case 'insurance':
+          guaranteeText = 'Seguro-Fiança: O LOCATÁRIO contrata seguro-fiança junto a uma seguradora.';
+          break;
+      }
+
+      // Geração do contrato em HTML
+      const landlordAddressText = data.landlordAddress ? `, residente e domiciliado na ${data.landlordAddress}` : '';
+      const tenantAddressText = data.tenantAddress ? `, residente e domiciliado na ${data.tenantAddress}` : '';
+
+      const contractHTML = `
+        <h4 style="text-align: center; font-weight: bold;">CONTRATO DE LOCAÇÃO DE IMÓVEL RESIDENCIAL</h4>
+        <p><strong>LOCADOR:</strong> ${data.landlordName}, ${data.landlordNationality}, ${data.landlordCivilStatus}, ${data.landlordProfession}, portador do CPF nº ${data.landlordCPF}${landlordAddressText}.</p>
+        <p><strong>LOCATÁRIO:</strong> ${data.tenantName}, ${data.tenantNationality}, ${data.tenantCivilStatus}, ${data.tenantProfession}, portador do CPF nº ${data.tenantCPF}${tenantAddressText}.</p>
+        <p>As partes citadas têm entre si justas e acordadas o presente Contrato de Locação de Imóvel Residencial, que se regerá pelas cláusulas e condições seguintes:</p>
+        <h5 style="font-weight: bold;">DO OBJETO</h5>
+        <p>Imóvel residencial situado na ${data.propertyAddress}.</p>
+        <h5 style="font-weight: bold;">CLÁUSULA PRIMEIRA - DA FINALIDADE</h5>
+        <p>O imóvel destina-se exclusivamente ao uso residencial do LOCATÁRIO e das pessoas que com ele residem. O LOCATÁRIO se compromete a utilizar o imóvel exclusivamente para fins residenciais, sendo expressamente vedada a utilização do imóvel para fins comerciais, industriais ou quaisquer outros que não sejam estritamente residenciais. O descumprimento desta cláusula poderá resultar na rescisão imediata do contrato.</p>
+        <h5 style="font-weight: bold;">CLÁUSULA SEGUNDA - DO PRAZO</h5>
+        <p>O prazo de locação é de ${rentalPeriodText}, com início em ${startDateText} e término em ${endDateText}.</p>
+        <p><strong>PARÁGRAFO PRIMEIRO -</strong> Findo o prazo estipulado, o presente contrato será automaticamente prorrogado por períodos iguais e sucessivos de 12 (doze) meses, salvo manifestação expressa em contrário de qualquer das partes, com antecedência mínima de 30 (trinta) dias do término de cada período.</p>
+        <p><strong>PARÁGRAFO SEGUNDO -</strong> Independentemente do disposto no parágrafo anterior, qualquer das partes poderá denunciar o presente contrato, com antecedência mínima de 30 (trinta) dias, contados do recebimento da notificação pela outra parte.</p>
+        <p><strong>PARÁGRAFO TERCEIRO -</strong> Caso o LOCATÁRIO deseje desocupar o imóvel antes do término do prazo estipulado neste contrato, deverá comunicar por escrito ao LOCADOR com antecedência mínima de 30 (trinta) dias. O LOCATÁRIO estará sujeito ao pagamento de uma multa rescisória equivalente a 25% do valor total do contrato, proporcional ao período restante de cumprimento do contrato, conforme previsto na Lei do Inquilinato (Lei nº 8.245/91). A multa será devida independentemente do motivo da desocupação antecipada, exceto nos casos previstos em lei.</p>
+        <p><strong>PARÁGRAFO QUARTO -</strong> O LOCADOR poderá denunciar o presente contrato nos casos previstos em lei, bem como em caso de inadimplência do LOCATÁRIO, após o prazo de 15 (quinze) dias de notificação extrajudicial, sem prejuízo de outras medidas cabíveis.</p>
+        <h5 style="font-weight: bold;">CLÁUSULA TERCEIRA - DO ALUGUEL E ENCARGOS</h5>
+        <p>O valor mensal do aluguel é de ${rentAmountText}, a ser pago até o dia ${paymentDayText} de cada mês, através de ${data.paymentMethod}.</p>
+        <p><strong>PARÁGRAFO PRIMEIRO -</strong> Em caso de atraso no pagamento do aluguel, será cobrada uma multa de ${lateFeeText} sobre o valor do aluguel em atraso, além de juros de ${interestRateText} ao mês e correção monetária conforme índice de inflação vigente.</p>
+        <p><strong>PARÁGRAFO SEGUNDO -</strong> Além do aluguel, o LOCATÁRIO é responsável pelo pagamento das contas de consumo (água e energia).</p>
+        <h5 style="font-weight: bold;">CLÁUSULA QUARTA - DO REAJUSTE</h5>
+        <p>O aluguel será reajustado anualmente, a cada ${readjustmentPeriodText}, com base na variação ${adjustmentIndexText}.</p>
+        <h5 style="font-weight: bold;">CLÁUSULA QUINTA - DA CONSERVAÇÃO E MANUTENÇÃO</h5>
+        <p>O LOCATÁRIO se compromete a manter o imóvel em perfeito estado de conservação e a devolvê-lo nas mesmas condições em que o recebeu, salvo deteriorações naturais do uso regular. Qualquer modificação ou reparo de grande porte deverá ser previamente autorizado por escrito pelo LOCADOR.</p>
+        <h5 style="font-weight: bold;">CLÁUSULA SEXTA - DA GARANTIA</h5>
+        <p>Para assegurar o cumprimento das obrigações contratuais, o presente contrato adota a modalidade de garantia locatícia conforme descrito a seguir:</p>
+        <p>${guaranteeText}</p>
+        <p>O LOCADOR e o LOCATÁRIO concordam com a modalidade de garantia escolhida e seus respectivos termos.</p>
+        <h5 style="font-weight: bold;">CLÁUSULA DÉCIMA SEGUNDA - DAS PENALIDADES</h5>
+        <p>O descumprimento de qualquer cláusula deste contrato implicará em sua rescisão imediata, com aplicação das penalidades previstas na Lei do Inquilinato (Lei nº 8.245/1991) e demais legislações aplicáveis.</p>
+        <p>E, por estarem assim justos e contratados, LOCADOR e LOCATÁRIO assinam o presente contrato para que produza seus legais e jurídicos efeitos. O presente contrato entra em vigor na data de sua assinatura, comprometendo-se ambas as partes a cumprir fielmente todas as cláusulas e condições aqui estabelecidas.</p>
+        <p style="text-align: center;">${contractDateText}</p>
+        <p style="margin-top: 40px;">__________________________________________</p>
+        <p style="text-align: center;">${data.landlordName}</p>
+        <p style="margin-top: 40px;">__________________________________________</p>
+        <p style="text-align: center;">${data.tenantName}</p>
+      `;
+
+      // Exibir pré-visualização
+      document.getElementById('contractText').innerHTML = contractHTML;
+      document.getElementById('contractPreview').style.display = 'block';
+
+      // Preparar PDF
+      const pdfTemp = document.getElementById('pdfTemp');
+      pdfTemp.innerHTML = contractHTML;
+
+      // Download como PDF
+      document.getElementById('downloadPDF').onclick = function() {
+        setTimeout(() => {
+          const element = document.getElementById('pdfTemp');
+          html2pdf()
+            .set({
+              filename: 'Contrato_Locacao.pdf',
+              margin: [10, 10, 10, 10],
+              html2canvas: { scale: 2, useCORS: true },
+              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            })
+            .from(element)
+            .save()
+            .then(() => {
+              pdfTemp.innerHTML = '';
+            });
+        }, 150);
+      };
+    });
+  </script>
+</body>
+</html>
